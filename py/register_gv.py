@@ -36,7 +36,7 @@ def get_driver(window_info):
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
-def main(group_name, file_path):
+def main(group_name, f_path):
     config_file_name = group_name
     date_str = get_date()
     setting_info = get_register_gv_setting_info(config_file_name)
@@ -54,7 +54,7 @@ def main(group_name, file_path):
     today_account_list_file = f'./file/account_info/{group_name}.json'
     today_account_list = get_json_file_info(today_account_list_file)
 
-    today_new_account_excel_file = f'./file/excel_info/{setting_info["accountFileName"]}.xlsx'
+    today_new_account_excel_file = f_path
     today_new_account_list = get_json_from_excel(today_new_account_excel_file)
 
     for account in today_new_account_list:

@@ -40,15 +40,15 @@ def get_driver(window_info):
 def update_local_info(cur_group_window_info_list, cur_group_window_list_file):
     write_json_to_file(cur_group_window_list_file, cur_group_window_info_list)
 
-async def main1():
+async def main1(group_name, f_path):
 
-    config_file_name = 'sendMsg'
+    config_file_name = group_name
     setting_info = get_send_msg_config_info(config_file_name)
     if not setting_info or not setting_info.get('groupName') or not setting_info.get('messageFileName'):
         print(f"Failed to read the send message configuration file, please check if the configuration file ./file/setting/{config_file_name}.json is configured correctly, groupName should be configured as the account group name, messageFileName should be configured as the message file name")
         return
 
-    message_file_name = f"./file/message_excel_info/{setting_info['messageFileName']}.xlsx"
+    message_file_name = f_path
     file_path = os.path.join(os.path.dirname(__file__), message_file_name)
     if not os.path.exists(file_path):
         print(f"Message data file {message_file_name} does not exist, please add the message data file first")

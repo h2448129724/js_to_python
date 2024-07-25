@@ -135,7 +135,7 @@ class App:
         threading.Thread(target=self.run_register_script, args=(group_name, file_path)).start()
 
     def run_index_script(self, group_name, file_path):
-        asyncio.run(index_main1())
+        asyncio.run(index_main1(group_name, file_path))
 
     def run_register_script(self, group_name, file_path):
         register_main(group_name, file_path)
