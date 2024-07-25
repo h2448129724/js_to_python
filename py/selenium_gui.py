@@ -12,7 +12,7 @@ import asyncio
 import pandas as pd
 from register_gv import main as register_main
 from index import main1 as index_main1
-
+from request import close_browser  # 导入 close_browser 函数
 
 class App:
     def __init__(self, parent, title, main_app, group_name=""):
@@ -22,6 +22,7 @@ class App:
         self.frame.grid(row=0, column=0, sticky="nsew")
         self.current_action = None # 功能选择
         self.file_path = tk.StringVar()
+
         self.group_name = tk.StringVar(value=group_name)
         self.group_id = None
         self.queue = queue.Queue()
@@ -82,8 +83,22 @@ class App:
         else:
             messagebox.showwarning("警告", "请先选择注册或发送信息操作。")
     def end(self):
-        print('结束')
-        pass
+        self.close_browser_with_title(self.title)
+
+    def close_browser_with_title(self, title):
+        # 此處有問題，如何獲取需要關閉的ID？
+        print(f'get id to close')
+        try:
+            with open(f'./file/window_info/{title}.json', 'r', encoding='utf-8') as file:
+                data = json.load(file)
+                if isinstance(data, list):
+                    latest_entry = next((entry for entry in reversed(data) if entry.get("name") == title), None)
+                    if latest_entry:
+                        id = latest_entry.get("id")
+                        if id:
+                            close_browser(id)
+        except Exception as e:
+            self.log(f"关闭浏览器时出错: {str(e)}\n")
     def start_script(self):
         current_tab = self.tab_control.index("current")
         if 0 <= current_tab < len(self.app_frames):
@@ -93,14 +108,18 @@ class App:
         current_tab = self.tab_control.index("current")
         if current_tab >= 0 and current_tab < len(self.app_frames):
             self.app_frames[current_tab].stop_script()
+
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
         self.file_path.set(file_path)
         if file_path:
-            with open(file_path, 'rb') as file:
-                content = file.read()
+            try:
+                df = pd.read_excel(file_path)
+                content = df.to_string(index=False)  # 将 DataFrame 转换为字符串
                 self.file_text.delete(1.0, tk.END)
                 self.file_text.insert(tk.INSERT, content)
+            except Exception as e:
+                messagebox.showerror("错误", f"读取文件时出错: {e}")
 
     def validate_excel_format(self, file_path, required):
         try:
@@ -160,12 +179,12 @@ class App:
     def log(self, message):
         self.queue.put(message)
 
-    def stop_script(self):
-        try:
-            self.driver.quit()
-            self.log("浏览器已停止。\n")
-        except Exception as e:
-            self.log(f"停止浏览器时出错: {str(e)}\n")
+    # def stop_script(self):
+    #     try:
+    #         self.driver.quit()
+    #         self.log("浏览器已停止。\n")
+    #     except Exception as e:
+    #         self.log(f"停止浏览器时出错: {str(e)}\n")
 
     def add_app(self):
         group_name = self.group_name.get()
