@@ -115,7 +115,7 @@ class App:
             messagebox.showwarning("警告", "发送消息的Excel文件格式不正确!")
             return
         print(f'发送消息{group_name}, {file_path}')
-        # threading.Thread(target=self.run_index_script, args=(group_name, file_path)).start()
+        threading.Thread(target=self.run_index_script, args=(group_name, file_path)).start()
 
     def run_register(self):
         group_name = self.title
@@ -132,13 +132,13 @@ class App:
             messagebox.showwarning("警告", "注册的Excel文件格式不正确!")
             return
         print(f'注册{group_name}, {file_path}')
-        # threading.Thread(target=self.run_register_script, args=(group_name, file_path)).start()
+        threading.Thread(target=self.run_register_script, args=(group_name, file_path)).start()
 
     def run_index_script(self, group_name, file_path):
         asyncio.run(index_main1())
 
     def run_register_script(self, group_name, file_path):
-        register_main()
+        register_main(group_name, file_path)
 
     def process_queue(self):
         while not self.queue.empty():

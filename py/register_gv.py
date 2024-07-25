@@ -36,13 +36,13 @@ def get_driver(window_info):
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
-def main():
-    config_file_name = "register"
+def main(group_name, file_path):
+    config_file_name = group_name
     date_str = get_date()
     setting_info = get_register_gv_setting_info(config_file_name)
     print(f'setting_info:{setting_info}')
     if not setting_info or 'groupName' not in setting_info or 'accountFileName' not in setting_info:
-        print('注册账号配置文件读取失败，请检查配置文件./file/setting/register.json是否配置正确')
+        print(f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确')
         return
 
     group_name = setting_info['groupName']
