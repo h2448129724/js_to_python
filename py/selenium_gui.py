@@ -20,7 +20,7 @@ class App:
         self.main_app = main_app
         self.frame = tk.Frame(parent)
         self.frame.grid(row=0, column=0, sticky="nsew")
-
+        self.current_action = None # 功能选择
         self.file_path = tk.StringVar()
         self.group_name = tk.StringVar(value=group_name)
         self.group_id = None
@@ -75,13 +75,24 @@ class App:
         self.file_text.pack(expand=1, fill='both', padx=10, pady=10)
 
     def start(self):
-        print('开始')
-        pass
-
+        if self.current_action == "register":
+            self.run_register()
+        elif self.current_action == "send_message":
+            self.run_send()
+        else:
+            messagebox.showwarning("警告", "请先选择注册或发送信息操作。")
     def end(self):
         print('结束')
         pass
+    def start_script(self):
+        current_tab = self.tab_control.index("current")
+        if 0 <= current_tab < len(self.app_frames):
+            self.app_frames[current_tab].start()
 
+    def stop_script(self):
+        current_tab = self.tab_control.index("current")
+        if current_tab >= 0 and current_tab < len(self.app_frames):
+            self.app_frames[current_tab].stop_script()
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
         self.file_path.set(file_path)
@@ -200,6 +211,17 @@ class MainApp:
 
         self.add_app("主界面")
 
+    def register(self):
+        current_tab = self.tab_control.index("current")
+        if 0 <= current_tab < len(self.app_frames):
+            self.app_frames[current_tab].current_action = "register"  # 设置当前操作为注册
+            messagebox.showinfo("操作选择", "已选择注册功能。请点击开始按钮。")
+
+    def send_message(self):
+        current_tab = self.tab_control.index("current")
+        if 0 <= current_tab < len(self.app_frames):
+            self.app_frames[current_tab].current_action = "send_message"  # 设置当前操作为发送信息
+            messagebox.showinfo("操作选择", "已选择发送信息功能。请点击开始按钮。")
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
         self.tab_control.add(tab_frame, text=title)
@@ -212,25 +234,17 @@ class MainApp:
             index = self.tab_control.index("current")
             self.tab_control.forget(index)
 
-    def start_script(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].run_script()
 
-    def stop_script(self):
-        current_tab = self.tab_control.index("current")
-        if current_tab >= 0 and current_tab < len(self.app_frames):
-            self.app_frames[current_tab].stop_script()
 
-    def register(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].run_register()
-
-    def send_message(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].run_send()
+    # def register(self):
+    #     current_tab = self.tab_control.index("current")
+    #     if 0 <= current_tab < len(self.app_frames):
+    #         self.app_frames[current_tab].run_register()
+    #
+    # def send_message(self):
+    #     current_tab = self.tab_control.index("current")
+    #     if 0 <= current_tab < len(self.app_frames):
+    #         self.app_frames[current_tab].run_send()
 
     def history(self):
         print("历史记录功能待实现")
