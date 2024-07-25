@@ -4,10 +4,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from utils import get_json_from_excel, delayed, get_date
-from request import open_browser
-from sms_request import request_phone_num, get_code
-from register import get_visible_element,get_visible_elements
+from .utils import get_json_from_excel, delayed, get_date
+from .request import open_browser
+from .sms_request import request_phone_num, get_code
+from .register import get_visible_element,get_visible_elements
 def send_message(driver, message):
     message_nav = select_message_nav(driver)
     if message_nav:

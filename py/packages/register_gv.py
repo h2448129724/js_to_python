@@ -1,13 +1,13 @@
 import asyncio
-from request import open_browser, close_browser, create_browser, get_group_list, add_group
-from utils import get_date, get_json_file_info, write_json_to_file, get_json_from_excel, get_json_obj_file_info
-from register import login_to_gv, get_visible_element
-from sendmsg import send_message
+from .request import open_browser, close_browser, create_browser, get_group_list, add_group
+from .utils import get_date, get_json_file_info, write_json_to_file, get_json_from_excel, get_json_obj_file_info
+from .register import login_to_gv, get_visible_element
+from .sendmsg import send_message
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 import sys
-async def main():
+async def main(config_file_name):
     if len(sys.argv) != 3:
         print('运行脚本失败，未指定配置文件')
         return

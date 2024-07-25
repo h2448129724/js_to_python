@@ -3,9 +3,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from utils import delayed
-from request import open_browser
-from sms_request import request_phone_num, get_code
+from .utils import delayed
+from .request import open_browser
+from .sms_request import request_phone_num, get_code
 
 async def login_to_gv(driver, user_name, password, recovery_email):
     is_success = False
