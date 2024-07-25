@@ -1,7 +1,7 @@
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module='PIL')
-
+import json
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, messagebox
 from tkinter import ttk
@@ -247,7 +247,49 @@ class MainApp:
     #         self.app_frames[current_tab].run_send()
 
     def history(self):
-        print("历史记录功能待实现")
+        file_path = filedialog.askopenfilename(
+            initialdir="./file/window_info",
+            filetypes=[("JSON files", "*.json")])
+
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    data = json.load(file)
+                    self.show_history(data)
+            except Exception as e:
+                messagebox.showerror("错误", f"读取文件时出错: {e}")
+
+    def show_history(self, data):
+        # 创建新的窗口显示历史记录
+        history_window = tk.Toplevel(self.root)
+        history_window.title("历史记录")
+
+        columns = ("id", "seq", "code", "groupId", "platformIcon", "name", "userName")
+
+        tree = ttk.Treeview(history_window, columns=columns, show='headings')
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=100)
+
+        if isinstance(data, list):  # 如果 JSON 文件内容是列表
+            for entry in data:
+                tree.insert("", tk.END, values=(entry.get("id"),
+                                                entry.get("seq"),
+                                                entry.get("code"),
+                                                entry.get("groupId"),
+                                                entry.get("platformIcon"),
+                                                entry.get("name"),
+                                                entry.get("userName")))
+        else:  # 如果 JSON 文件内容是单个字典
+            tree.insert("", tk.END, values=(data.get("id"),
+                                            data.get("seq"),
+                                            data.get("code"),
+                                            data.get("groupId"),
+                                            data.get("platformIcon"),
+                                            data.get("name"),
+                                            data.get("userName")))
 
 
 if __name__ == "__main__":
