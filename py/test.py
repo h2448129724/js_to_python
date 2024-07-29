@@ -1,5 +1,6 @@
-import warnings
 import os
+import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning, module='PIL')
 import json
 import tkinter as tk
@@ -14,13 +15,34 @@ from register_gv import main as register_main
 from index import main1 as index_main1
 from request import close_browser  # 导入 close_browser 函数
 
+
+# 初始化检查文件夹
+def initialize_folders():
+    folders = [
+        "account_info",
+        "excel_info",
+        "message_excel_info",
+        "message_info",
+        "setting",
+        "window_info"
+    ]
+    for folder in folders:
+        path = os.path.join("./file", folder)
+        if not os.path.exists(path):
+            os.makedirs(path)
+            print(f"文件夹 {path} 已创建")
+        else:
+            print(f"文件夹 {path} 已存在")
+    print("初始化检查完成。")
+
+
 class App:
     def __init__(self, parent, title, main_app, group_name=""):
         self.parent = parent
         self.main_app = main_app
         self.frame = tk.Frame(parent)
         self.frame.grid(row=0, column=0, sticky="nsew")
-        self.current_action = None # 功能选择
+        self.current_action = None  # 功能选择
         self.file_path = tk.StringVar()
 
         self.group_name = tk.StringVar(value=group_name)
@@ -29,26 +51,6 @@ class App:
         self.title = title
         self.create_widgets(title)
         self.parent.after(100, self.process_queue)
-        # 定义文件夹路径
-        folders = [
-            "account_info",
-            "excel_info",
-            "message_excel_info",
-            "message_info",
-            "setting",
-            "window_info"
-        ]
-
-        # 检查文件夹是否存在，如果不存在则创建
-        for folder in folders:
-            path = os.path.join("./file", folder)
-            if not os.path.exists(path):
-                os.makedirs(path)
-                print(f"文件夹 {path} 已创建")
-            else:
-                print(f"文件夹 {path} 已存在")
-
-        print("初始化检查完成。")
 
     def create_widgets(self, title):
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -71,12 +73,12 @@ class App:
         self.control_frame = tk.Frame(self.frame)
         self.control_frame.grid(row=2, column=0, columnspan=3, pady=10)
 
-        self.add_app_button = tk.Button(self.control_frame, text="新建窗口", command=self.add_app)
+        self.add_app_button = tk.Button(self.control_frame, text="新建窗口", command=self.main_app.add_app)
         self.add_app_button.grid(row=0, column=0, padx=5, pady=5)
-        ##
+
         self.start_button = tk.Button(self.control_frame, text="开始", command=self.start)
         self.start_button.grid(row=0, column=1, padx=5, pady=5)
-        ##
+
         self.stop_button = tk.Button(self.control_frame, text="结束", command=self.end)
         self.stop_button.grid(row=0, column=2, padx=5, pady=5)
 
@@ -102,11 +104,11 @@ class App:
             self.run_send()
         else:
             messagebox.showwarning("警告", "请先选择注册或发送信息操作。")
+
     def end(self):
         self.close_browser_with_title(self.title)
 
     def close_browser_with_title(self, title):
-        # 此處有問題，如何獲取需要關閉的ID？
         print(f'get id to close')
         try:
             with open(f'./file/window_info/{title}.json', 'r', encoding='utf-8') as file:
@@ -119,15 +121,6 @@ class App:
                             close_browser(id)
         except Exception as e:
             self.log(f"关闭浏览器时出错: {str(e)}\n")
-    def start_script(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].start()
-
-    def stop_script(self):
-        current_tab = self.tab_control.index("current")
-        if current_tab >= 0 and current_tab < len(self.app_frames):
-            self.app_frames[current_tab].stop_script()
 
     def browse_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
@@ -199,29 +192,6 @@ class App:
     def log(self, message):
         self.queue.put(message)
 
-    # def stop_script(self):
-    #     try:
-    #         self.driver.quit()
-    #         self.log("浏览器已停止。\n")
-    #     except Exception as e:
-    #         self.log(f"停止浏览器时出错: {str(e)}\n")
-
-    def add_app(self):
-        group_name = self.group_name.get()
-        if not group_name:
-            messagebox.showwarning("警告", "分组名不能为空!")
-            return
-        # 检查分组名是否已经存在
-        for tab_id in self.main_app.tab_control.tabs():
-            if self.main_app.tab_control.tab(tab_id, "text") == group_name:
-                messagebox.showwarning("警告", "分组名已经存在!")
-                return
-        tab_title = group_name
-        tab_frame = tk.Frame(self.main_app.tab_control)
-        self.main_app.tab_control.add(tab_frame, text=tab_title)
-        app_frame = App(tab_frame, tab_title, self.main_app, group_name)
-        self.main_app.app_frames.append(app_frame)
-
 
 class MainApp:
     def __init__(self, root):
@@ -234,104 +204,111 @@ class MainApp:
         menu_frame = tk.Frame(main_frame, width=200)
         menu_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-        self.register_button = tk.Button(menu_frame, text="注册", command=self.register)
+        self.register_button = tk.Button(menu_frame, text="注册", command=self.show_register)
         self.register_button.pack(fill=tk.X, pady=10)
 
-        self.send_message_button = tk.Button(menu_frame, text="发送短信", command=self.send_message)
+        self.send_message_button = tk.Button(menu_frame, text="发送短信", command=self.show_send_message)
         self.send_message_button.pack(fill=tk.X, pady=10)
 
-        self.history_button = tk.Button(menu_frame, text="历史记录", command=self.history)
+        self.history_button = tk.Button(menu_frame, text="历史记录", command=self.show_history)
         self.history_button.pack(fill=tk.X, pady=10)
 
         self.tab_control = ttk.Notebook(main_frame)
-        self.tab_control.pack(side=tk.LEFT, expand=1, fill='both')
+        self.tab_control.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
 
+        self.pages = {}
+        self.current_page = None
+
+    def show_register(self):
+        self.show_page("register")
+
+    def show_send_message(self):
+        self.show_page("send_message")
+
+    def show_history(self):
+        self.show_page("history")
+
+    def show_page(self, page_name):
+        if page_name not in self.pages:
+            if page_name == "register":
+                self.pages[page_name] = RegisterPage(self.tab_control, self)
+            elif page_name == "send_message":
+                self.pages[page_name] = SendMessagePage(self.tab_control, self)
+            elif page_name == "history":
+                self.pages[page_name] = HistoryPage(self.tab_control, self)
+
+        if self.current_page:
+            self.current_page.pack_forget()
+        self.current_page = self.pages[page_name]
+        self.current_page.pack(expand=1, fill=tk.BOTH)
+        self.tab_control.add(self.current_page, text=page_name.capitalize())
+
+    def add_app(self):
+        current_page = self.current_page
+        if isinstance(current_page, RegisterPage):
+            current_page.add_app("注册")
+        elif isinstance(current_page, SendMessagePage):
+            current_page.add_app("发送短信")
+        elif isinstance(current_page, HistoryPage):
+            current_page.add_app("历史记录")
+
+
+class RegisterPage(tk.Frame):
+    def __init__(self, parent, main_app):
+        super().__init__(parent)
+        self.main_app = main_app
         self.app_frames = []
 
-        self.add_app("主界面")
+        self.tab_control = ttk.Notebook(self)
+        self.tab_control.pack(expand=1, fill='both')
 
-    def register(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].current_action = "register"  # 设置当前操作为注册
-            messagebox.showinfo("操作选择", "已选择注册功能。请点击开始按钮。")
+        self.add_app("注册")
 
-    def send_message(self):
-        current_tab = self.tab_control.index("current")
-        if 0 <= current_tab < len(self.app_frames):
-            self.app_frames[current_tab].current_action = "send_message"  # 设置当前操作为发送信息
-            messagebox.showinfo("操作选择", "已选择发送信息功能。请点击开始按钮。")
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
         self.tab_control.add(tab_frame, text=title)
-        app_frame = App(tab_frame, title, self, group_name)
+        app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
 
-    def remove_app(self):
-        if self.app_frames:
-            app_frame = self.app_frames.pop()
-            index = self.tab_control.index("current")
-            self.tab_control.forget(index)
+
+class SendMessagePage(tk.Frame):
+    def __init__(self, parent, main_app):
+        super().__init__(parent)
+        self.main_app = main_app
+        self.app_frames = []
+
+        self.tab_control = ttk.Notebook(self)
+        self.tab_control.pack(expand=1, fill='both')
+
+        self.add_app("发送短信")
+
+    def add_app(self, title, group_name=""):
+        tab_frame = tk.Frame(self.tab_control)
+        self.tab_control.add(tab_frame, text=title)
+        app_frame = App(tab_frame, title, self.main_app, group_name)
+        self.app_frames.append(app_frame)
 
 
+class HistoryPage(tk.Frame):
+    def __init__(self, parent, main_app):
+        super().__init__(parent)
+        self.main_app = main_app
+        self.app_frames = []
 
-    # def register(self):
-    #     current_tab = self.tab_control.index("current")
-    #     if 0 <= current_tab < len(self.app_frames):
-    #         self.app_frames[current_tab].run_register()
-    #
-    # def send_message(self):
-    #     current_tab = self.tab_control.index("current")
-    #     if 0 <= current_tab < len(self.app_frames):
-    #         self.app_frames[current_tab].run_send()
+        self.tab_control = ttk.Notebook(self)
+        self.tab_control.pack(expand=1, fill='both')
 
-    def history(self):
-        file_path = filedialog.askopenfilename(
-            initialdir="./file/window_info",
-            filetypes=[("JSON files", "*.json")])
+        self.add_app("历史记录")
 
-        if file_path:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    data = json.load(file)
-                    self.show_history(data)
-            except Exception as e:
-                messagebox.showerror("错误", f"读取文件时出错: {e}")
-
-    def show_history(self, data):
-        # 创建新的窗口显示历史记录
-        history_window = tk.Toplevel(self.root)
-        history_window.title("历史记录")
-
-        columns = ("id", "seq", "code", "groupId", "platformIcon", "name", "userName")
-
-        tree = ttk.Treeview(history_window, columns=columns, show='headings')
-        tree.pack(fill=tk.BOTH, expand=True)
-
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=100)
-
-        if isinstance(data, list):  # 如果 JSON 文件内容是列表
-            for entry in data:
-                tree.insert("", tk.END, values=(entry.get("id"),
-                                                entry.get("seq"),
-                                                entry.get("code"),
-                                                entry.get("groupId"),
-                                                entry.get("platformIcon"),
-                                                entry.get("name"),
-                                                entry.get("userName")))
-        else:  # 如果 JSON 文件内容是单个字典
-            tree.insert("", tk.END, values=(data.get("id"),
-                                            data.get("seq"),
-                                            data.get("code"),
-                                            data.get("groupId"),
-                                            data.get("platformIcon"),
-                                            data.get("name"),
-                                            data.get("userName")))
+    def add_app(self, title, group_name=""):
+        tab_frame = tk.Frame(self.tab_control)
+        self.tab_control.add(tab_frame, text=title)
+        app_frame = App(tab_frame, title, self.main_app, group_name)
+        self.app_frames.append(app_frame)
 
 
 if __name__ == "__main__":
+    initialize_folders()
     root = tk.Tk()
     main_app = MainApp(root)
     root.mainloop()
