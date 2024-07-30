@@ -15,6 +15,7 @@ from utils import get_date, get_json_file_info, write_json_to_file, get_json_fro
 from register import login_to_gv
 from request import open_browser, close_browser, create_browser, get_group_list, add_group
 
+
 def open_window(window_id):
     open_res = open_browser({
         'id': window_id,
@@ -24,10 +25,11 @@ def open_window(window_id):
     })
     return open_res
 
+
 def get_driver(window_info):
     driver_path = window_info['data']['driver']
     debuggerAddress = window_info['data']['http']
-     # selenium 连接代码
+    # selenium 连接代码
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_experimental_option("debuggerAddress", debuggerAddress)
 
@@ -36,56 +38,39 @@ def get_driver(window_info):
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
-def main(group_name, f_path, stop_event):
-    while True:
-        print('testing')
-        is_running = check_is_running()
-        if not is_running or stop_event.is_set():
-            print("用户停止程序")
-            break
-    config_file_name = group_name
-    date_str = get_date()
-    setting_info = get_register_gv_setting_info(config_file_name)
-    print(f'setting_info:{setting_info}')
-    # if not setting_info or 'groupName' not in setting_info or 'accountFileName' not in setting_info:
-    #     print(f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确')
-    #     return
-    # settingInfo = None  # 假设这是从某个地方获取的设置信息
 
-    if not setting_info or not setting_info.get('groupName') or not setting_info.get('accountFileName'):
-        print(
-            f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确,groupName应该配置为账号分组名称,accountFileName应该配置为含有账号信息的excel文件名称')
+def main(group_name, f_path, stop_event):
+    if stop_event.is_set():
+        print(f"用户手动停止程序,分组名称为: {group_name}")
         return
-    group_name = setting_info['groupName']
-    print(f'groupName:{group_name}')
+
     group_id = get_group_id_by_name(group_name)
     if not group_id:
+        print(f"分组名称{group_name}不存在，请检查分组输入是否正确")
         return
 
-    today_account_list_file = f'./file/account_info/{group_name}.json'
-    today_account_list = get_json_file_info(today_account_list_file)
+    cur_group_account_list_file = f'./file/account_info/{group_name}.json'
+    cur_group_account_list = get_json_file_info(cur_group_account_list_file)
 
-    today_new_account_excel_file = f_path
-    today_new_account_list = get_json_from_excel(today_new_account_excel_file)
+    new_account_excel_file = f_path
+    new_account_list = get_json_from_excel(new_account_excel_file)
 
-    for account in today_new_account_list:
-        if not any(item['userName'] == account['userName'] for item in today_account_list):
-            today_account_list.append(account)
+    for account in new_account_list:
+        if not any(item['userName'] == account['userName'] for item in cur_group_account_list):
+            cur_group_account_list.append(account)
 
-    write_json_to_file(today_account_list_file, today_account_list)
+    write_json_to_file(cur_group_account_list_file, cur_group_account_list)
 
-    today_window_list_file = f'./file/window_info/{group_name}.json'
-    today_window_info_list = get_json_file_info(today_window_list_file)
+    cur_window_list_file = f'./file/window_info/{group_name}.json'
+    cur_window_info_list = get_json_file_info(cur_window_list_file)
 
-    print(f'today_window_info_list:{today_new_account_list.count}')
-
-    if today_new_account_list:
-        for i, account_info in enumerate(today_new_account_list):
+    if new_account_list:
+        for i, account_info in enumerate(new_account_list):
             print(f'index:{i}')
-            if not any(item['userName'] == account_info['userName'] and item['password'] == account_info['password'] for item in today_window_info_list):
-                window_info_params = generate_window_info(group_id, "https://accounts.google.com/", "gmail", f"{group_name}-{i}", 
-                                                          account_info['userName'], account_info['password'], account_info['remark'], 
-                                                          2, "socks5", account_info['host'], account_info['port'], 
+            if not any(item['userName'] == account_info['userName'] and item['password'] == account_info['password'] for item in cur_window_info_list):
+                window_info_params = generate_window_info(group_id, "https://accounts.google.com/", "gmail", f"{group_name}-{i}",
+                                                          account_info['userName'], account_info['password'], account_info['remark'],
+                                                          2, "socks5", account_info['host'], account_info['port'],
                                                           account_info['proxyUserName'], account_info['proxyPassword'])
                 res = create_browser(window_info_params)
                 if res['success']:
@@ -108,24 +93,25 @@ def main(group_name, f_path, stop_event):
                         'proxyPassword': res['data']['proxyPassword'],
                         'remark': res['data']['remark']
                     }
-                    today_window_info_list.append(window_info)
+                    cur_window_info_list.append(window_info)
                 else:
                     print(f"添加窗口失败！{window_info_params['userName']}", res)
 
-        write_json_to_file(today_window_list_file, today_window_info_list)
+        write_json_to_file(cur_window_list_file, cur_window_info_list)
 
     date = get_date()
 
-    for current_window in today_window_info_list:
-        is_running = check_is_running(config_file_name)
-        if not is_running or stop_event.is_set():
+    for current_window in cur_window_info_list:
+
+        if stop_event.is_set():
             print("用户停止程序")
             return
 
         if 'registerFailedInfo' not in current_window:
             current_window['registerFailedInfo'] = []
 
-        today_failed_info = next((item for item in current_window['registerFailedInfo'] if item['date'] == date_str), None)
+        today_failed_info = next(
+            (item for item in current_window['registerFailedInfo'] if item['date'] == date), None)
         if today_failed_info and today_failed_info['count'] > 3:
             print(f"今日注册失败次数超过3次,不再操作窗口{current_window['seq']}")
             continue
@@ -138,7 +124,8 @@ def main(group_name, f_path, stop_event):
             try:
                 driver = get_driver(open_res)
                 driver.get('https://voice.google.com/')
-                is_success = login_to_gv(driver, current_window['userName'], current_window['password'], current_window['remark'])
+                is_success = login_to_gv(
+                    driver, current_window['userName'], current_window['password'], current_window['remark'])
                 if is_success:
                     print(f"gv注册成功,窗口id: {current_window['seq']}")
                     current_window['isRegisterSuccess'] = True
@@ -148,23 +135,26 @@ def main(group_name, f_path, stop_event):
                     if today_failed_info:
                         today_failed_info['count'] += 1
                     else:
-                        current_window['registerFailedInfo'].append({'date': date, 'count': 1})
+                        current_window['registerFailedInfo'].append(
+                            {'date': date, 'count': 1})
                 close_all_tabs(driver)
             except Exception as e:
                 print('打开gv页面失败，检查代理是否配置正确')
                 if today_failed_info:
                     today_failed_info['count'] += 1
                 else:
-                    current_window['registerFailedInfo'].append({'date': date, 'count': 1})
+                    current_window['registerFailedInfo'].append(
+                        {'date': date, 'count': 1})
         else:
             print('打开窗口失败')
             current_window['isOpenSuccess'] = False
             if today_failed_info:
                 today_failed_info['count'] += 1
             else:
-                current_window['registerFailedInfo'].append({'date': date, 'count': 1})
+                current_window['registerFailedInfo'].append(
+                    {'date': date, 'count': 1})
 
-        write_json_to_file(today_window_list_file, today_window_info_list)
+        write_json_to_file(cur_window_list_file, cur_window_info_list)
         time.sleep(2)
 
         try:
@@ -175,14 +165,10 @@ def main(group_name, f_path, stop_event):
         except Exception as e:
             print('关闭窗口失败', e)
 
-        is_running = check_is_running(config_file_name)
-        if not is_running or stop_event.is_set():
+        if stop_event.is_set():
             print("用户停止程序")
             return
 
-def get_register_gv_setting_info(config_file_name):
-    gv_setting_file_name = f'./file/setting/{config_file_name}.json'
-    return get_json_obj_file_info(gv_setting_file_name)
 
 def close_all_tabs(driver):
     all_handles = driver.window_handles
@@ -191,10 +177,12 @@ def close_all_tabs(driver):
         time.sleep(1)
         driver.close()
 
+
 def get_group_id_by_name(group_name):
     group_list_resp = get_group_list(0, 100)
     if group_list_resp['success']:
-        group_item = next((item for item in group_list_resp['data']['list'] if item['groupName'] == group_name), None)
+        group_item = next(
+            (item for item in group_list_resp['data']['list'] if item['groupName'] == group_name), None)
         if group_item:
             print("已存在分组")
             return group_item['id']
@@ -208,6 +196,7 @@ def get_group_id_by_name(group_name):
                 print("添加分组失败", add_group_resp)
     else:
         print("获取分组列表失败", group_list_resp)
+
 
 def generate_window_info(group_id, platform, platform_icon, name, user_name, password, remark, proxy_method, proxy_type, host, port, proxy_user_name, proxy_password):
     return {
@@ -229,11 +218,6 @@ def generate_window_info(group_id, platform, platform_icon, name, user_name, pas
         },
     }
 
-def check_is_running(config_file_name='None'):
-    # if stop_event.is_set() :
-    # gv_setting_file_name = f'./file/setting/{config_file_name}.json'
-    # json_info = get_json_obj_file_info(gv_setting_file_name)
-    return True
 
 if __name__ == "__main__":
     main()

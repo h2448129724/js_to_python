@@ -40,24 +40,17 @@ def get_driver(window_info):
 def update_local_info(cur_group_window_info_list, cur_group_window_list_file):
     write_json_to_file(cur_group_window_list_file, cur_group_window_info_list)
 
-async def main1(group_name, f_path):
+async def main1(group_name, f_path, stop_event):
 
-    config_file_name = group_name
-    setting_info = get_send_msg_config_info(config_file_name)
-    if not setting_info or not setting_info.get('groupName') or not setting_info.get('messageFileName'):
-        print(f"Failed to read the send message configuration file, please check if the configuration file ./file/setting/{config_file_name}.json is configured correctly, groupName should be configured as the account group name, messageFileName should be configured as the message file name")
+    if stop_event.is_set():
+        print(f"用户手动停止程序,分组名称为: {group_name}")
         return
 
     message_file_name = f_path
-    file_path = os.path.join(os.path.dirname(__file__), message_file_name)
-    if not os.path.exists(file_path):
-        print(f"Message data file {message_file_name} does not exist, please add the message data file first")
-        return
 
-    group_name = setting_info['groupName']
     group_id = check_group_exist(group_name)
     if not group_id:
-        print(f"Group does not exist, please check if the groupName in the configuration file ./file/setting/{config_file_name}.json is correct")
+        print(f"分组{group_name}不存在，请检查分组输入是否正确")
         return
 
     cur_group_window_list_file = f"./file/window_info/{group_name}.json"
@@ -85,26 +78,26 @@ async def main1(group_name, f_path):
                     message_index = message_record['messageIndex']
                 
                 print(f"Starting the {send_times}th round of sending, starting from the {message_index}th message")
-                send_result = start_send_message(config_file_name, group_name, cur_group_window_info_list, message_index, message_list)
+                send_result = start_send_message(stop_event, group_name, cur_group_window_info_list, message_index, message_list)
                 update_local_info(cur_group_window_info_list, cur_group_window_list_file)
                 print(f"The {send_times}th round of sending is completed, a total of {len(cur_group_window_info_list)} windows were operated, of which {send_result['openFailedCount']} failed to open, {send_result['loginFailedCount']} failed to log in, and {send_result['sendMsgFailedCount']} failed to send")
                 if len(send_result['unreadMsgWindowId']) > 0:
                     print(f"Windows {send_result['unreadMsgWindowId']} have unread messages, please check them in time!!!!!!")
                 
                 while send_result['status'] != 'hasNoMoreMsg':
-                    is_running = check_is_running(config_file_name)
-                    if not is_running or stop_event.is_set():
+                    if stop_event.is_set():
                         print("User stopped the program")
                         break
+
                     asyncio.sleep(300)
-                    is_running = check_is_running(config_file_name)
-                    if not is_running or stop_event.is_set():
+
+                    if stop_event.is_set():
                         print("User stopped the program")
                         break
                     send_times += 1
                     message_index = send_result['messageIndex'] + 1
                     print(f"Starting the {send_times}th round of sending, starting from the {message_index}th message")
-                    send_result = start_send_message(config_file_name, group_name, cur_group_window_info_list, message_index, message_list)
+                    send_result = start_send_message(stop_event, group_name, cur_group_window_info_list, message_index, message_list)
                     print(f"The {send_times}th round of sending is completed, a total of {len(cur_group_window_info_list)} windows were operated, of which {send_result['openFailedCount']} failed to open, {send_result['loginFailedCount']} failed to log in, and {send_result['sendMsgFailedCount']} failed to send")
                     if len(send_result['unreadMsgWindowId']) > 0:
                         print(f"Windows {send_result['unreadMsgWindowId']} have unread messages, please check them in time!!!!!!")
@@ -126,7 +119,7 @@ async def close_service():
     except Exception as e:
         print(e)
 
-def start_send_message(config_file_name, group_name, windows_list, message_index, message_list):
+def start_send_message(stop_event, group_name, windows_list, message_index, message_list):
     send_result = {
         'message': {},
         'messageIndex': message_index,
@@ -139,8 +132,7 @@ def start_send_message(config_file_name, group_name, windows_list, message_index
     }
     date_str = get_date()
     for current_window in windows_list:
-        is_running = check_is_running(config_file_name)
-        if not is_running or stop_event.is_set():
+        if stop_event.is_set():
             print("User stopped the program")
             return send_result
         
@@ -238,16 +230,11 @@ def start_send_message(config_file_name, group_name, windows_list, message_index
         
         send_result['window'] = current_window
         close_service()
-        is_running = check_is_running(config_file_name)
-        if not is_running or stop_event.is_set():
+        if stop_event.is_set():
             print('User stopped the program')
             return send_result
     
     return send_result
-
-def get_send_msg_config_info(config_file_name):
-    gv_setting_file_name = f"./file/setting/{config_file_name}.json"
-    return get_json_obj_file_info(gv_setting_file_name)
 
 async def close_all_tab(driver):
     print('Closing all tabs')
@@ -270,11 +257,6 @@ def check_group_exist(group_name):
     else:
         print("Failed to get group list", group_list_resp)
     return None
-
-def check_is_running(config_file_name):
-    gv_setting_file_name = f"./file/setting/{config_file_name}.json"
-    json_info = get_json_obj_file_info(gv_setting_file_name)
-    return json_info.get('isRunning', False)
 
 def record_message_info(date_str, message_info):
     message_record_file_path = f"./file/message_info/{date_str}.json"
