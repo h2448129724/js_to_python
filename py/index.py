@@ -93,12 +93,12 @@ async def main1(group_name, f_path):
                 
                 while send_result['status'] != 'hasNoMoreMsg':
                     is_running = check_is_running(config_file_name)
-                    if not is_running:
+                    if not is_running or stop_event.is_set():
                         print("User stopped the program")
                         break
                     asyncio.sleep(300)
                     is_running = check_is_running(config_file_name)
-                    if not is_running:
+                    if not is_running or stop_event.is_set():
                         print("User stopped the program")
                         break
                     send_times += 1
@@ -140,7 +140,7 @@ def start_send_message(config_file_name, group_name, windows_list, message_index
     date_str = get_date()
     for current_window in windows_list:
         is_running = check_is_running(config_file_name)
-        if not is_running:
+        if not is_running or stop_event.is_set():
             print("User stopped the program")
             return send_result
         
@@ -239,7 +239,7 @@ def start_send_message(config_file_name, group_name, windows_list, message_index
         send_result['window'] = current_window
         close_service()
         is_running = check_is_running(config_file_name)
-        if not is_running:
+        if not is_running or stop_event.is_set():
             print('User stopped the program')
             return send_result
     

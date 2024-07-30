@@ -36,7 +36,13 @@ def get_driver(window_info):
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
-def main(group_name, f_path):
+def main(group_name, f_path, stop_event):
+    while True:
+        print('testing')
+        is_running = check_is_running()
+        if not is_running or stop_event.is_set():
+            print("用户停止程序")
+            break
     config_file_name = group_name
     date_str = get_date()
     setting_info = get_register_gv_setting_info(config_file_name)
@@ -112,7 +118,7 @@ def main(group_name, f_path):
 
     for current_window in today_window_info_list:
         is_running = check_is_running(config_file_name)
-        if not is_running:
+        if not is_running or stop_event.is_set():
             print("用户停止程序")
             return
 
@@ -170,7 +176,7 @@ def main(group_name, f_path):
             print('关闭窗口失败', e)
 
         is_running = check_is_running(config_file_name)
-        if not is_running:
+        if not is_running or stop_event.is_set():
             print("用户停止程序")
             return
 
@@ -223,10 +229,11 @@ def generate_window_info(group_id, platform, platform_icon, name, user_name, pas
         },
     }
 
-def check_is_running(config_file_name):
-    gv_setting_file_name = f'./file/setting/{config_file_name}.json'
-    json_info = get_json_obj_file_info(gv_setting_file_name)
-    return json_info['isRunning']
+def check_is_running(config_file_name='None'):
+    # if stop_event.is_set() :
+    # gv_setting_file_name = f'./file/setting/{config_file_name}.json'
+    # json_info = get_json_obj_file_info(gv_setting_file_name)
+    return True
 
 if __name__ == "__main__":
     main()

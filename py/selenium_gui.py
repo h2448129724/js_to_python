@@ -15,6 +15,7 @@ import pandas as pd
 from register_gv import main as register_main
 from index import main1 as index_main1
 from request import close_browser  # 导入 close_browser 函数
+from register_gv import check_is_running
 
 
 # 初始化检查文件夹
@@ -52,6 +53,7 @@ class App:
         self.title = title
         self.create_widgets(title)
         self.parent.after(100, self.process_queue)
+        self.stop_event = threading.Event()  # 添加停止事件
 
     def create_widgets(self, title):
         self.frame.grid(row=0, column=0, sticky="nsew")
@@ -102,6 +104,7 @@ class App:
         self.group_name.set(new_name)
 
     def start(self):
+        self.stop_event.clear()
         current_page_name = self.main_app.get_current_page_name()
         # 获取当前选项卡的引用并更新选项卡的文本
         current_tab = self.main_app.get_current_tab()
@@ -169,7 +172,8 @@ class App:
                                             data.get("userName")))
 
     def end(self):
-        self.close_browser_with_title(self.title)
+        self.stop_event.set()  # 设置停止事件
+        # self.close_browser_with_title(self.title)
 
     def close_browser_with_title(self, title):
         print(f'get id to close')
@@ -246,7 +250,7 @@ class App:
         asyncio.run(index_main1(group_name, file_path))
 
     def run_register_script(self, group_name, file_path):
-        register_main(group_name, file_path)
+        register_main(group_name, file_path, self.stop_event)  # 传递停止事件
 
     def process_queue(self):
         while not self.queue.empty():
