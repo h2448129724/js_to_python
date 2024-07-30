@@ -1,3 +1,4 @@
+
 import os
 import warnings
 
@@ -87,7 +88,7 @@ class App:
         self.file_content_tab = tk.Frame(self.tab_control)
 
         self.tab_control.add(self.log_tab, text='日志')
-        self.tab_control.add(self.file_content_tab, text='文件内容')
+        self.tab_control.add(self.file_content_tab, text='信息')
 
         self.tab_control.grid(row=3, column=0, columnspan=3, sticky="nsew")
 
@@ -97,13 +98,75 @@ class App:
         self.file_text = scrolledtext.ScrolledText(self.file_content_tab, wrap=tk.WORD, width=70, height=20)
         self.file_text.pack(expand=1, fill='both', padx=10, pady=10)
 
+    def update_group_name(self, new_name):
+        self.group_name.set(new_name)
+
     def start(self):
-        if self.current_action == "register":
+        current_page_name = self.main_app.get_current_page_name()
+        # 获取当前选项卡的引用并更新选项卡的文本
+        current_tab = self.main_app.get_current_tab()
+        self.main_app.tab_control.tab(current_tab, text=self.group_name.get())
+
+        group_name = self.group_name.get()
+        file_path = self.file_path.get()
+        print(f'当前页面: {current_page_name}')
+        print(f'分组名: {group_name}, 文件路径: {file_path}')
+        if current_page_name == '注册':
+            print(f'执行注册')
             self.run_register()
-        elif self.current_action == "send_message":
+        elif current_page_name == '发送信息':
+            print(f'执行发送信息')
             self.run_send()
+        elif current_page_name == '历史记录':
+            self.history()
+            print(f'执行历史记录')
         else:
-            messagebox.showwarning("警告", "请先选择注册或发送信息操作。")
+            print(f'执行出现问题')
+
+    def history(self):
+        file_path = filedialog.askopenfilename(
+            initialdir="./file/window_info",
+            filetypes=[("JSON files", "*.json")])
+
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    data = json.load(file)
+                    self.show_history(data)
+            except Exception as e:
+                messagebox.showerror("错误", f"读取文件时出错: {e}")
+
+    def show_history(self, data):
+        # 创建新的窗口显示历史记录
+        history_window = tk.Toplevel(self.parent)
+        history_window.title("历史记录")
+
+        columns = ("id", "seq", "code", "groupId", "platformIcon", "name", "userName")
+
+        tree = ttk.Treeview(history_window, columns=columns, show='headings')
+        tree.pack(fill=tk.BOTH, expand=True)
+
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=100)
+
+        if isinstance(data, list):  # 如果 JSON 文件内容是列表
+            for entry in data:
+                tree.insert("", tk.END, values=(entry.get("id"),
+                                                entry.get("seq"),
+                                                entry.get("code"),
+                                                entry.get("groupId"),
+                                                entry.get("platformIcon"),
+                                                entry.get("name"),
+                                                entry.get("userName")))
+        else:  # 如果 JSON 文件内容是单个字典
+            tree.insert("", tk.END, values=(data.get("id"),
+                                            data.get("seq"),
+                                            data.get("code"),
+                                            data.get("groupId"),
+                                            data.get("platformIcon"),
+                                            data.get("name"),
+                                            data.get("userName")))
 
     def end(self):
         self.close_browser_with_title(self.title)
@@ -145,7 +208,7 @@ class App:
             return False
 
     def run_send(self):
-        group_name = self.title
+        group_name = self.group_name.get()
         file_path = self.file_path.get()
         if not group_name:
             messagebox.showwarning("警告", "分组名不能为空!")
@@ -161,7 +224,7 @@ class App:
         threading.Thread(target=self.run_index_script, args=(group_name, file_path)).start()
 
     def run_register(self):
-        group_name = self.title
+        group_name = self.group_name.get()
         file_path = self.file_path.get()
 
         if not group_name:
@@ -176,7 +239,9 @@ class App:
             return
         print(f'注册{group_name}, {file_path}')
         threading.Thread(target=self.run_register_script, args=(group_name, file_path)).start()
-
+    def update_tab_text(self, new_text):
+        current_page_index = self.tab_control.index(self.current_page)
+        self.tab_control.tab(current_page_index, text=new_text)
     def run_index_script(self, group_name, file_path):
         asyncio.run(index_main1(group_name, file_path))
 
@@ -191,7 +256,6 @@ class App:
 
     def log(self, message):
         self.queue.put(message)
-
 
 class MainApp:
     def __init__(self, root):
@@ -213,45 +277,61 @@ class MainApp:
         self.history_button = tk.Button(menu_frame, text="历史记录", command=self.show_history)
         self.history_button.pack(fill=tk.X, pady=10)
 
-        self.tab_control = ttk.Notebook(main_frame)
-        self.tab_control.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
+        # 添加自定义样式来隐藏主界面的tab栏
+        style = ttk.Style()
+        style.layout('Custom.TNotebook.Tab', [])  # 移除tab栏
 
+        self.tab_control = ttk.Notebook(main_frame, style='Custom.TNotebook')
+        self.tab_control.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
+        self.page_name = None
         self.pages = {}
         self.current_page = None
+        # 初始化页面
+        self.show_register()
+        self.show_send_message()
+        self.show_history()
 
+    def get_current_tab(self):
+        return self.tab_control.select()
+    def get_current_page_name(self):
+        return self.page_name
+
+    def update_tab_text(self, new_text):
+        current_page_index = self.tab_control.index(self.current_page)
+        self.tab_control.tab(current_page_index, text=new_text)  # 确保使用 text 参数
     def show_register(self):
-        self.show_page("register")
+        self.show_page("注册")
 
     def show_send_message(self):
-        self.show_page("send_message")
+        self.show_page("发送信息")
 
     def show_history(self):
-        self.show_page("history")
+        self.show_page("历史记录")
 
     def show_page(self, page_name):
+        self.page_name = page_name
         if page_name not in self.pages:
-            if page_name == "register":
+            if page_name == "注册":
                 self.pages[page_name] = RegisterPage(self.tab_control, self)
-            elif page_name == "send_message":
+            elif page_name == "发送信息":
                 self.pages[page_name] = SendMessagePage(self.tab_control, self)
-            elif page_name == "history":
+            elif page_name == "历史记录":
                 self.pages[page_name] = HistoryPage(self.tab_control, self)
 
         if self.current_page:
-            self.current_page.pack_forget()
+            self.tab_control.forget(self.current_page)
         self.current_page = self.pages[page_name]
-        self.current_page.pack(expand=1, fill=tk.BOTH)
         self.tab_control.add(self.current_page, text=page_name.capitalize())
+        self.tab_control.select(self.current_page)
 
     def add_app(self):
         current_page = self.current_page
         if isinstance(current_page, RegisterPage):
-            current_page.add_app("注册")
+            current_page.add_app("窗口")
         elif isinstance(current_page, SendMessagePage):
-            current_page.add_app("发送短信")
+            current_page.add_app("窗口")
         elif isinstance(current_page, HistoryPage):
-            current_page.add_app("历史记录")
-
+            current_page.add_app("窗口")
 
 class RegisterPage(tk.Frame):
     def __init__(self, parent, main_app):
@@ -266,7 +346,7 @@ class RegisterPage(tk.Frame):
 
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
-        self.tab_control.add(tab_frame, text=title)
+        self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
 
@@ -284,7 +364,7 @@ class SendMessagePage(tk.Frame):
 
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
-        self.tab_control.add(tab_frame, text=title)
+        self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
 
@@ -302,7 +382,7 @@ class HistoryPage(tk.Frame):
 
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
-        self.tab_control.add(tab_frame, text=title)
+        self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
 

@@ -41,10 +41,15 @@ def main(group_name, f_path):
     date_str = get_date()
     setting_info = get_register_gv_setting_info(config_file_name)
     print(f'setting_info:{setting_info}')
-    if not setting_info or 'groupName' not in setting_info or 'accountFileName' not in setting_info:
-        print(f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确')
-        return
+    # if not setting_info or 'groupName' not in setting_info or 'accountFileName' not in setting_info:
+    #     print(f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确')
+    #     return
+    # settingInfo = None  # 假设这是从某个地方获取的设置信息
 
+    if not setting_info or not setting_info.get('groupName') or not setting_info.get('accountFileName'):
+        print(
+            f'注册账号配置文件读取失败，请检查配置文件./file/setting/{group_name}.json是否配置正确,groupName应该配置为账号分组名称,accountFileName应该配置为含有账号信息的excel文件名称')
+        return
     group_name = setting_info['groupName']
     print(f'groupName:{group_name}')
     group_id = get_group_id_by_name(group_name)
