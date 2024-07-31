@@ -12,7 +12,7 @@ import asyncio
 import pandas as pd
 from register_gv import main as register_main
 from index import main1 as index_main1
-from request import close_browser  # 导入 close_browser 函数
+from request import close_browser
 import sys
 import contextlib
 # 更新后的 MainApp 类
@@ -40,18 +40,18 @@ class MainApp:
         style.layout('Custom.TNotebook.Tab', [])
 
         self.tab_control = ttk.Notebook(main_frame, style='Custom.TNotebook')
-        self.tab_control.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
-        self.page_name = None
+        self.tab_control.pack(fill=tk.BOTH, expand=True)
+
         self.pages = {}
         self.current_page = None
-        main_frame.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
-
-
+        self.page_name = None
 
         self.show_history()
         self.show_send_message()
         self.show_register()
+
+    # 其他方法保持不变
+
 
     def update_current_tab_text(self, new_text):
         if self.current_page:
@@ -144,17 +144,18 @@ class App:
             self.browse_button = tk.Button(self.frame, text="浏览", command=self.browse_file)
             self.browse_button.grid(row=1, column=2, pady=5, sticky='w')
 
-        self.control_frame = tk.Frame(self.frame)
-        self.control_frame.grid(row=2, column=0, columnspan=3, pady=10, sticky='ew')
+        # 控制按钮Frame
+        control_frame = tk.Frame(self.frame)
+        control_frame.grid(row=2, column=0, columnspan=3, pady=10)
 
-        self.add_app_button = tk.Button(self.control_frame, text="新建窗口", command=self.main_app.add_app)
-        self.add_app_button.grid(row=0, column=0, padx=5, pady=5)
+        self.add_app_button = tk.Button(control_frame, text="新建窗口", command=self.main_app.add_app)
+        self.add_app_button.pack(side=tk.LEFT, padx=5)
 
-        self.start_button = tk.Button(self.control_frame, text="开始", command=self.start)
-        self.start_button.grid(row=0, column=1, padx=5, pady=5)
+        self.start_button = tk.Button(control_frame, text="开始", command=self.start)
+        self.start_button.pack(side=tk.LEFT, padx=5)
 
-        self.stop_button = tk.Button(self.control_frame, text="结束", command=self.end)
-        self.stop_button.grid(row=0, column=2, padx=5, pady=5)
+        self.stop_button = tk.Button(control_frame, text="结束", command=self.end)
+        self.stop_button.pack(side=tk.LEFT, padx=5)
 
         self.tab_control = ttk.Notebook(self.frame)
         self.log_tab = tk.Frame(self.tab_control)
@@ -193,8 +194,7 @@ class App:
         self.file_content_tab.grid_rowconfigure(1, weight=1)
         self.file_content_tab.grid_columnconfigure(0, weight=1)
 
-    def update_group_name(self, new_name):
-        self.group_name.set(new_name)
+
 
     def start(self):
         sys.stdout = self.stdout
@@ -226,7 +226,7 @@ class App:
             self.run_register()
         elif current_page_name == '发送信息':
             now_page.update_current_sub_tab_text(group_name)
-            App.running_groups.add(group_name)
+
             print(f'执行发送信息', file=self.stdout)
             self.run_send()
         elif current_page_name == '历史记录':
@@ -339,6 +339,7 @@ class App:
             return
         print(f'发送消息{group_name}, {file_path}', file=self.stdout)
         self.start_button.config(state=tk.DISABLED)  # 禁用运行按钮
+        App.running_groups.add(group_name)
         threading.Thread(target=self.run_index_script, args=(group_name, file_path)).start()
 
     def run_register(self):
@@ -360,6 +361,7 @@ class App:
             return
         print(f'注册{group_name}, {file_path}', file=self.stdout)
         self.start_button.config(state=tk.DISABLED)  # 禁用运行按钮
+        App.running_groups.add(group_name)
         threading.Thread(target=self.run_register_script, args=(group_name, file_path)).start()
 
     def update_tab_text(self, new_text):
@@ -420,8 +422,6 @@ class StdRedirector:
 
     def flush(self):
         pass
-
-
 class RegisterPage(tk.Frame):
     def __init__(self, parent, main_app):
         super().__init__(parent)
@@ -435,15 +435,17 @@ class RegisterPage(tk.Frame):
 
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
+        tab_frame.grid_rowconfigure(0, weight=1)
+        tab_frame.grid_columnconfigure(0, weight=1)
         self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
-
 
     def update_current_sub_tab_text(self, new_text):
         current_tab = self.tab_control.select()
         if current_tab:
             self.tab_control.tab(current_tab, text=new_text)
+
 
 class SendMessagePage(tk.Frame):
     def __init__(self, parent, main_app):
@@ -458,15 +460,17 @@ class SendMessagePage(tk.Frame):
 
     def add_app(self, title, group_name=""):
         tab_frame = tk.Frame(self.tab_control)
+        tab_frame.grid_rowconfigure(0, weight=1)
+        tab_frame.grid_columnconfigure(0, weight=1)
         self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name)
         self.app_frames.append(app_frame)
-
 
     def update_current_sub_tab_text(self, new_text):
         current_tab = self.tab_control.select()
         if current_tab:
             self.tab_control.tab(current_tab, text=new_text)
+
 
 class HistoryPage(tk.Frame):
     def __init__(self, parent, main_app):
@@ -481,15 +485,17 @@ class HistoryPage(tk.Frame):
 
     def add_app(self, title, opt, group_name="", ):
         tab_frame = tk.Frame(self.tab_control)
+        tab_frame.grid_rowconfigure(0, weight=1)
+        tab_frame.grid_columnconfigure(0, weight=1)
         self.tab_control.add(tab_frame, text=title)  # 显示text参数
         app_frame = App(tab_frame, title, self.main_app, group_name=group_name, option=False)
         self.app_frames.append(app_frame)
-
 
     def update_current_sub_tab_text(self, new_text):
         current_tab = self.tab_control.select()
         if current_tab:
             self.tab_control.tab(current_tab, text=new_text)
+
 
 def initialize_folders():
     folders = [
