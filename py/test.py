@@ -1,16 +1,7 @@
-import tkinter as tk
-class MyApp(tk.Frame):
-    def init (self, master=None):
-        super().init (master)
-        self.master =master
-        self.label = tk.Label(self.master, text="Hello, World!", bg="gray")
-        self.label.place(relx=0.5,rely=0.5, anchor="center")
-        self.pack()
-        self.bind("<Configure>",self.on_resize)
-    def on_resize(self, event):
-        w= event.width
-        h = event.heightself.label.place_configure(relx=0.5, rely=0.5, anchor="center", width=w*.8, height=h*0.8)
+import hashlib
 
-root = tk.Tk()
-app = MyApp(root)
-app.mainloop()
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# 生成密码"password123"的哈希值
+print(hash_password("123456"))

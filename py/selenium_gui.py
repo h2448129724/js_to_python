@@ -15,6 +15,47 @@ from index import main1 as index_main1
 from request import close_browser
 import sys
 import contextlib
+import hashlib
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def check_password(stored_password_hash, provided_password):
+    return stored_password_hash == hash_password(provided_password)
+class LoginWindow:
+    def __init__(self, root, on_login_success):
+        self.root = root
+        self.root.title("登录")
+
+        self.on_login_success = on_login_success
+
+        self.frame = tk.Frame(self.root)
+        self.frame.pack(padx=10, pady=10)
+
+        self.username_label = tk.Label(self.frame, text="用户名:")
+        self.username_label.grid(row=0, column=0, pady=5)
+        self.username_entry = tk.Entry(self.frame)
+        self.username_entry.grid(row=0, column=1, pady=5)
+
+        self.password_label = tk.Label(self.frame, text="密码:")
+        self.password_label.grid(row=1, column=0, pady=5)
+        self.password_entry = tk.Entry(self.frame, show='*')
+        self.password_entry.grid(row=1, column=1, pady=5)
+
+        self.login_button = tk.Button(self.frame, text="登录", command=self.login)
+        self.login_button.grid(row=2, columnspan=2, pady=5)
+
+        self.message_label = tk.Label(self.frame, text="", fg="red")
+        self.message_label.grid(row=3, columnspan=2, pady=5)
+
+    def login(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if username == "admin" and check_password("8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", password):
+            self.on_login_success()
+        else:
+            self.message_label.config(text="用户名或密码错误")
+
 # 更新后的 MainApp 类
 class MainApp:
     def __init__(self, root):
@@ -520,5 +561,12 @@ def initialize_folders():
 if __name__ == "__main__":
     initialize_folders()
     root = tk.Tk()
-    main_app = MainApp(root)
+
+    def on_login_success():
+        root.destroy()
+        main_root = tk.Tk()
+        main_app = MainApp(main_root)
+        main_root.mainloop()
+
+    login_window = LoginWindow(root, on_login_success)
     root.mainloop()
