@@ -107,5 +107,3 @@ def get_key(key_text):
     }
     return key_mapping.get(key_text, key_text)
 
-# If you want to use these functions in other Python files:
-# from file_name import get_date, get_json_file_info, write_json_to_file, get_json_from_excel, get_json_obj_file_info

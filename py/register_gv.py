@@ -10,11 +10,13 @@ from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
 import time
 
-# These functions would need to be implemented based on your specific requirements
+
 from utils import get_date, get_json_file_info, write_json_to_file, get_json_from_excel, get_json_obj_file_info
 from register import login_to_gv
 from request import open_browser, close_browser, create_browser, get_group_list, add_group
-
+import contextlib
+import sys
+import asyncio
 
 def open_window(window_id):
     open_res = open_browser({
@@ -39,9 +41,10 @@ def get_driver(window_info):
     return driver
 
 
-def main(group_name, f_path, stop_event):
+def main(group_name, f_path, stop_event, file):
+
     if stop_event.is_set():
-        print(f"用户手动停止程序,分组名称为: {group_name}")
+        print(f"用户手动停止程序,分组名称为: {group_name}", file=file)
         return
 
     group_id = get_group_id_by_name(group_name)
@@ -104,7 +107,7 @@ def main(group_name, f_path, stop_event):
     for current_window in cur_window_info_list:
 
         if stop_event.is_set():
-            print("用户停止程序")
+            print("用户停止程序", file=file)
             return
 
         if 'registerFailedInfo' not in current_window:
@@ -166,7 +169,7 @@ def main(group_name, f_path, stop_event):
             print('关闭窗口失败', e)
 
         if stop_event.is_set():
-            print("用户停止程序")
+            print("用户停止程序", file=file)
             return
 
 

@@ -36,5 +36,3 @@ def get_code(id, start_time):
                 time.sleep(5)
                 return get_code(id, start_time)
 
-# If you want to use these functions in other Python files:
-# from this_file_name import request_phone_num, get_code
